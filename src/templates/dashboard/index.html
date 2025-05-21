@@ -1,0 +1,193 @@
+{% extends 'base.html' %}
+
+{% block title %}Dashboard{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    <h2 class="card-title">Welcome, {{ session.get('username', 'User') }}!</h2>
+                    
+                    {% if not setup_complete %}
+                    <div class="alert alert-info">
+                        <h5><i class="fas fa-info-circle me-2"></i>Complete Your Setup</h5>
+                        <p>You need to complete the setup wizard to start automating your job applications.</p>
+                        <a href="{{ url_for('wizard.index') }}" class="btn btn-primary">Start Setup Wizard</a>
+                    </div>
+                    {% else %}
+                    <div class="alert alert-success">
+                        <h5><i class="fas fa-check-circle me-2"></i>Automation Active</h5>
+                        <p>Your job application automation is active. We'll apply to matching jobs based on your settings.</p>
+                        <form action="{{ url_for('dashboard.pause_automation') }}" method="post" class="d-inline">
+                            <button type="submit" class="btn btn-warning">Pause Automation</button>
+                        </form>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card shadow-sm dashboard-card">
+                <div class="card-body text-center">
+                    <i class="fas fa-briefcase fa-3x text-primary mb-3"></i>
+                    <h5 class="card-title">Total Applications</h5>
+                    <p class="dashboard-stat">{{ total_applications }}</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card shadow-sm dashboard-card">
+                <div class="card-body text-center">
+                    <i class="fas fa-star fa-3x text-success mb-3"></i>
+                    <h5 class="card-title">Excellent Matches</h5>
+                    <p class="dashboard-stat">{{ excellent_matches }}</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card shadow-sm dashboard-card">
+                <div class="card-body text-center">
+                    <i class="fas fa-thumbs-up fa-3x text-info mb-3"></i>
+                    <h5 class="card-title">Good Matches</h5>
+                    <p class="dashboard-stat">{{ good_matches }}</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card shadow-sm dashboard-card">
+                <div class="card-body text-center">
+                    <i class="fas fa-check fa-3x text-warning mb-3"></i>
+                    <h5 class="card-title">Fair Matches</h5>
+                    <p class="dashboard-stat">{{ fair_matches }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="row">
+        <div class="col-md-6">
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">Recent Applications</h5>
+                </div>
+                <div class="card-body">
+                    {% if recent_applications %}
+                    <div class="list-group">
+                        {% for app in recent_applications %}
+                        <div class="list-group-item list-group-item-action">
+                            <div class="d-flex w-100 justify-content-between">
+                                <h6 class="mb-1">{{ application_jobs[app.id].title }}</h6>
+                                <small>{{ app.applied_at.strftime('%b %d, %Y') }}</small>
+                            </div>
+                            <p class="mb-1">{{ application_jobs[app.id].company }}</p>
+                            <small class="text-muted">
+                                Status: 
+                                {% if app.status == 'pending' %}
+                                <span class="badge bg-secondary">Pending</span>
+                                {% elif app.status == 'submitted' %}
+                                <span class="badge bg-primary">Submitted</span>
+                                {% elif app.status == 'viewed' %}
+                                <span class="badge bg-info">Viewed</span>
+                                {% elif app.status == 'responded' %}
+                                <span class="badge bg-success">Responded</span>
+                                {% elif app.status == 'rejected' %}
+                                <span class="badge bg-danger">Rejected</span>
+                                {% endif %}
+                            </small>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <p class="text-center text-muted my-4">No applications yet</p>
+                    {% endif %}
+                    
+                    <div class="text-center mt-3">
+                        <a href="{{ url_for('dashboard.activity') }}" class="btn btn-outline-primary">View All Applications</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-6">
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">Top Job Matches</h5>
+                </div>
+                <div class="card-body">
+                    {% if recent_matches %}
+                    <div class="list-group">
+                        {% for match in recent_matches %}
+                        <div class="list-group-item list-group-item-action">
+                            <div class="d-flex w-100 justify-content-between">
+                                <h6 class="mb-1">{{ match_jobs[match.id].title }}</h6>
+                                <div class="match-score {{ 'match-excellent' if match.match_score >= 90 else 'match-good' if match.match_score >= 70 else 'match-fair' if match.match_score >= 50 else 'match-poor' }}">
+                                    {{ match.match_score }}%
+                                </div>
+                            </div>
+                            <p class="mb-1">{{ match_jobs[match.id].company }}</p>
+                            <small class="text-muted">
+                                {% if match.job_id in application_jobs.values()|map(attribute='id')|list %}
+                                <span class="badge bg-success">Applied</span>
+                                {% else %}
+                                <a href="{{ url_for('jobs.view', job_id=match.job_id) }}" class="btn btn-sm btn-outline-primary">View Details</a>
+                                {% endif %}
+                            </small>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <p class="text-center text-muted my-4">No job matches yet</p>
+                    {% endif %}
+                    
+                    <div class="text-center mt-3">
+                        <a href="{{ url_for('jobs.index') }}" class="btn btn-outline-primary">View All Matches</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="row">
+        <div class="col-md-12">
+            <div class="card shadow-sm">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">Quick Actions</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-3 mb-3">
+                            <a href="{{ url_for('jobs.search') }}" class="btn btn-outline-primary w-100 py-3">
+                                <i class="fas fa-search fa-2x mb-2"></i><br>
+                                Search Jobs
+                            </a>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <a href="{{ url_for('jobs.refresh_matches') }}" class="btn btn-outline-primary w-100 py-3">
+                                <i class="fas fa-sync fa-2x mb-2"></i><br>
+                                Refresh Matches
+                            </a>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <a href="{{ url_for('dashboard.daily_summary') }}" class="btn btn-outline-primary w-100 py-3">
+                                <i class="fas fa-file-alt fa-2x mb-2"></i><br>
+                                Daily Summary
+                            </a>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <a href="{{ url_for('settings.index') }}" class="btn btn-outline-primary w-100 py-3">
+                                <i class="fas fa-cog fa-2x mb-2"></i><br>
+                                Settings
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

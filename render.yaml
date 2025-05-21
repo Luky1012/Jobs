@@ -1,0 +1,34 @@
+build:
+  env:
+    python_version: 3.11.0
+services:
+  - type: web
+    name: linkedin-job-app
+    env: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn src.main:app
+    envVars:
+      - key: FLASK_APP
+        value: src.main
+      - key: FLASK_ENV
+        value: production
+      - key: LINKEDIN_CLIENT_ID
+        sync: false
+      - key: LINKEDIN_CLIENT_SECRET
+        sync: false
+      - key: LINKEDIN_REDIRECT_URI
+        sync: false
+      - key: GROK3_API_KEY
+        sync: false
+      - key: SECRET_KEY
+        generateValue: true
+      - key: DB_USERNAME
+        sync: false
+      - key: DB_PASSWORD
+        sync: false
+      - key: DB_HOST
+        sync: false
+      - key: DB_PORT
+        sync: false
+      - key: DB_NAME
+        sync: false
