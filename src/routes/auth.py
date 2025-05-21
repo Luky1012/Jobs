@@ -16,9 +16,11 @@ def login():
         user = User.query.filter_by(email=email).first()
         
         if user and check_password_hash(user.password_hash, password):
-            if not user.is_verified:
-                flash('Please verify your email address before logging in.', 'warning')
-                return redirect(url_for('auth.login'))
+            # Email verification check removed to allow immediate login
+            # Original code:
+            # if not user.is_verified:
+            #     flash('Please verify your email address before logging in.', 'warning')
+            #     return redirect(url_for('auth.login'))
                 
             session['user_id'] = user.id
             session['username'] = user.username
@@ -62,16 +64,18 @@ def register():
             email=email,
             password_hash=generate_password_hash(password),
             verification_token=verification_token,
-            is_verified=False
+            is_verified=True  # Changed from False to True to bypass email verification
         )
         
         db.session.add(new_user)
         db.session.commit()
         
+        # Email verification disabled
+        # Original code:
         # Send verification email (implementation would be added here)
         # send_verification_email(email, verification_token)
         
-        flash('Registration successful! Please check your email to verify your account.', 'success')
+        flash('Registration successful! You can now log in.', 'success')  # Updated message
         return redirect(url_for('auth.login'))
     
     return render_template('auth/register.html')
